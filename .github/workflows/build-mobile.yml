@@ -1,0 +1,34 @@
+name: Build Native iOS (.ipa)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build-native-ios-ipa:
+    name: Build Native SwiftUI iOS App (.ipa)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate Xcode Project & Build Unsigned .ipa
+        working-directory: ./ios-native
+        run: |
+          which xcodegen || brew install xcodegen
+          xcodegen generate
+          xcodebuild -project ChatterCashNative.xcodeproj \
+            -scheme ChatterCash \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+          mkdir -p Payload
+          cp -r build/Build/Products/Release-iphoneos/ChatterCash.app Payload/
+          zip -r ChatterCash-iOS.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ChatterCash-Native-iOS-IPA
+          path: ios-native/ChatterCash-iOS.ipa
